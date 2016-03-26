@@ -28,7 +28,7 @@ test('Object macros', function () {
 	`))
 });
 
-test.only('Function macros', function () {
+test('Function macros', function () {
 	assert.equal(clean(prepr(`
 		#define lang_init()  c_init()
 		int x = lang_init();
@@ -36,13 +36,20 @@ test.only('Function macros', function () {
 		#undef lang_init
 		int z = lang_init();
 	`)), clean(`
-		var x = c_init();
-		var y = lang_init;
-		var z = lang_init();
+		int x = c_init();
+		int y = lang_init;
+		int z = lang_init();
+	`));
+
+	assert.equal(clean(prepr(`
+		#define lang_init ()    c_init()
+		lang_init()
+	`)), clean(`
+		() c_init()()
 	`));
 });
 
-test('Macro arguments', function () {
+test.only('Macro arguments', function () {
 	assert.equal(clean(prepr(`
 		#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 		x = min(a, b);

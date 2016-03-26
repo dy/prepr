@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node test.js"
   },
+  "files": ["index.js"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dfcreative/prepr.git"

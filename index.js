@@ -75,16 +75,23 @@ function preprocess (what, how) {
 
 	//register macro, #define directive
 	function define (str) {
-		var data = /([a-z0-9_]*)\s*(?:\(([^\(\)]*)\))?/i.exec(str);
+		var data = /([a-z0-9_]*)(?:\(([^\(\)]*)\))?/i.exec(str);
 		var name = data[1];
 		var args = data[2];
 
-		var value = str.slice(name.length + (args ? args.length : 0)).trim();
+		var value = str.slice(data[0].length).trim();
 
 		//register function macro
 		//#define FOO(A, B) (expr)
-		if (args) {
-			// args = args.split(/\s*,\s*/).map(function (name, pos) {
+		if (args != null) {
+			if (args.trim().length) {
+				args = args.split(/\s*,\s*/);
+			}
+			else {
+				args = [];
+			}
+
+			// .map(function (name, pos) {
 			// 	//escape all strings
 			// 	var strings = [];
 
@@ -113,32 +120,16 @@ function preprocess (what, how) {
 			// 	return `var ${name} = arguments[${pos}] || '';`;
 			// });
 
-			// name += '()';
+			macros[name] = function (argValues) {
+				var str = value;
 
-			// var fn = new Function(`
-			// 	${fnArgs.join('\n ')}
+				//for each arg - replace it’s occurence in `str`
+				for (var i = 0; i < args.length; i++) {
+					str = str.replace(new RegExp(`\b${args[i]}\b`, 'g'), argValues[i]);
+				}
 
-			// 	var result = '${value}';
-
-			// 	var strings = [];
-			// 	result = result.replace(/\'[^']*\'/g, function (match) {
-			// 		return '×' + strings.push(match);
-			// 	});
-			// 	result = result.replace(/\"[^"]*\"/g, function (match) {
-			// 		return '×' + strings.push(match);
-			// 	});
-			// 	result = result.replace(/\\\`[^\`]*\\\`/g, function (match) {
-			// 		return '×' + strings.push(match);
-			// 	});
-
-			// 	result = this.preprocessDescriptor(result);
-
-			// 	strings.forEach(function (rep, i) {
-			// 		result = result.replace('×' + (i+1), rep);
-			// 	});
-
-			// 	return result;
-			// `);
+				return process(str);
+			};
 		}
 
 		//register value macro
