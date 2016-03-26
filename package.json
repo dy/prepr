@@ -1,0 +1,32 @@
+{
+  "name": "prepr",
+  "version": "1.0.0",
+  "description": "Preprocess string in C/GLSL-preprocessor fashion",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dfcreative/prepr.git"
+  },
+  "keywords": [
+    "glsl",
+    "c",
+    "preprocessor",
+    "preprocess",
+    "macro",
+    "macros",
+    "define"
+  ],
+  "author": "Deema Yvanow <dfcreative@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dfcreative/prepr/issues"
+  },
+  "homepage": "https://github.com/dfcreative/prepr#readme",
+  "devDependencies": {
+    "cln": "^1.0.0",
+    "tst": "^1.3.1"
+  }
+}
