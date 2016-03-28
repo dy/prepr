@@ -5,7 +5,7 @@
 
 var paren = require('parenthesis');
 var balanced = require('balanced-match');
-
+var extend = require('xtend/mutable');
 
 /**
  * Main processing function
@@ -16,16 +16,16 @@ function preprocess (what, how) {
 
 	//defined macros
 	//FIXME: provide real values here
-	var macros = {
+	var macros = extend({
 		// __LINE__: 0,
 		// __FILE__: '',
-		// __VERSION__: 100
-		defined: function (args) {
-			return args && args.every(function (arg) {
+		__VERSION__: 100,
+		defined: function () {
+			return [].slice.call(arguments).every(function (arg) {
 				return macros[arg] != null;
 			});
 		}
-	};
+	}, how);
 
 
 	var chunk, directive;
@@ -125,7 +125,7 @@ function preprocess (what, how) {
 				});
 
 				//apply macro call with args
-				return fn(args);
+				return fn.apply(null, args);
 			});
 		});
 
@@ -222,12 +222,12 @@ function preprocess (what, how) {
 				args = [];
 			}
 
-			macros[name] = function (argValues) {
+			macros[name] = function () {
 				var result = value;
 
 				//for each arg - replace it’s occurence in `result`
 				for (var i = 0; i < args.length; i++) {
-					result = processDefinition(result, args[i], argValues[i]);
+					result = processDefinition(result, args[i], arguments[i]);
 				}
 
 				result = process(result);
