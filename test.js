@@ -102,7 +102,7 @@ test('Macro arguments', function () {
 	});
 });
 
-test.only('Stringification', function () {
+test('Stringification', function () {
 	test('Multiline example', function () {
 		assert.equal(clean(prepr(`
 			#define WARN_IF(EXP) \
@@ -115,13 +115,13 @@ test.only('Stringification', function () {
 		`));
 	});
 
-	test.only('Nested stringification', function () {
+	test('Nested stringification', function () {
 		assert.equal(clean(prepr(`
 		#define xstr(s) str(s)
 		#define str(s) #s
 		#define foo 4
 		str (foo);
-		/* xstr (foo); */
+		xstr (foo);
 		`)), clean(`
 		"foo";
 		"4";

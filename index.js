@@ -16,16 +16,16 @@ function preprocess (what, how) {
 	//defined macros
 	//FIXME: provide real values here
 	var macros = {
-		__LINE__: 0,
-		__FILE__: '',
-		__VERSION__: 100
+		// __LINE__: 0,
+		// __FILE__: '',
+		// __VERSION__: 100
 	};
 
 
 	var chunk, nextDirective;
 
 	//process everything which is before the next directive
-	while (nextDirective = /#([a-z0-9_]+)\s*(.*)/ig.exec(source)) {
+	while (nextDirective = /#([a-z0-9_$]+)\s*(.*)/ig.exec(source)) {
 		chunk = source.slice(0, nextDirective.index);
 		result += process(chunk);
 
@@ -50,78 +50,133 @@ function preprocess (what, how) {
 
 	//process chunk of a string by finding out macros and replacing them
 	function process (str) {
-		//hide comments
-		var comments = [];
-		str = str.replace(/\/\/[^\n]*$/mg, function (match) {
-			return '___comment' + comments.push(match);
-		});
-		str = str.replace(/\/\*([^\*]|[\r\n]|(\*+([^\*\/]|[\r\n])))*\*+\//g, function (match) {
-			return '___comment' + comments.push(match);
-		});
+		var arr = [];
 
-		//for each registered macro - find it’s mention in the code and make replacement
+		str = escape(str, arr);
+
+		//for each registered macro do it’s call
 		for (var name in macros) {
 			//fn macro
 			if (macros[name] instanceof Function) {
-				var parts = paren(str, {
-					flat: true,
-					brackets: '()',
-					escape: '___'
-				});
-
-				var re = new RegExp(name + '\\s*\\(___([0-9]+)\\)');
-
-				str = processParens(parts[0]);
-
-				//process list of cross-referenced parentheses
-				function processParens (str) {
-					var data;
-
-					//if there is a macro call in str - insert it’s arguments, do call
-					if (data = re.exec(str)) {
-						var args = parts[data[1]];
-						args = args.split(/\s*,\s*/);
-						args = args.map(processParens);
-						var res = macros[name](args);
-
-						var restParts = parts.slice();
-						restParts[0] = processParens(str.slice(data.index + data[0].length));
-
-						var rest = paren.stringify(restParts, {flat: true, escape: '___'});
-
-						return str.slice(0, data.index) + res + rest;
-					}
-
-					//else - just unwrap string
-					else {
-						var restParts = parts.slice();
-						restParts[0] = str;
-
-						return paren.stringify(restParts, {flat: true, escape: '___'});
-					}
-				};
-			}
-			//value replacement
-			else {
-				var re = new RegExp(name, 'g');
-				str = str.replace(re, function (match, idx, str) {
-					return macros[name];
-				});
+				str = processFunction(str, name, macros[name]);
 			}
 		}
 
+		str = escape(str, arr);
 
-		//unhide comments
-		comments.forEach(function (value, i) {
-			str = str.replace('___comment' + (i+1), value);
-		});
+		//for each defined var do replacement
+		for (var name in macros) {
+			//value replacement
+			if (!(macros[name] instanceof Function)) {
+				str = processDefinition(str, name, macros[name]);
+			}
+		}
+
+		str = unescape(str, arr);
 
 		return str;
 	}
 
+	//replace defined macros from a string
+	function processFunction (str, name, fn) {
+		var arr = [];
+		str = escape(str, arr);
+
+		var parts = paren(str, {
+			flat: true,
+			brackets: '()',
+			escape: '___'
+		});
+
+		var re = new RegExp(name + '\\s*\\(___([0-9]+)\\)', 'g');
+
+		//replace each macro call with result
+		parts = parts.map(function (part) {
+			return part.replace(re, function (match, argsPartIdx) {
+				//parse arguments
+				var args = parts[argsPartIdx];
+				args = args.split(/\s*,\s*/);
+				args = args.map(function (arg) {
+					var argParts = parts.slice();
+					argParts[0] = arg;
+					return paren.stringify(argParts, {flat: true, escape: '___'});
+				}).map(function (arg) {
+					return arg;
+				});
+
+				//apply macro call with args
+				return fn(args);
+			});
+		});
+
+		str = paren.stringify(parts, {flat: true, escape: '___'});
+
+		str = unescape(str, arr);
+
+		return str;
+	}
+
+	//replace defined variables from a string
+	function processDefinition (str, name, value) {
+		var arr = [];
+		str = escape(str, arr);
+
+		//apply replacements
+		str = str.replace(new RegExp(`([^#a-z0-9_$]|^)(${name})([^a-z0-9_$]|$)`, 'ig'), function (match, pre, name, post) {
+
+			//insert definition
+			if (macros[value] != null && !(macros[value] instanceof Function)) value = macros[value];
+
+			return pre + value + post;
+		});
+		str = str.replace(new RegExp(`(#${name})([^a-z0-9_$]|$)`, 'ig'), function (match, name, post) {
+			return  '"' + value + '"' + post;
+		});
+
+		str = unescape(str, arr);
+
+		return str;
+	}
+
+	//helpers to escape unfoldable things in strings
+	function escape (str, arr) {
+		//hide comments
+		str = str.replace(/\/\/[^\n]*$/mg, function (match) {
+			return '___comment' + arr.push(match);
+		});
+		str = str.replace(/\/\*([^\*]|[\r\n]|(\*+([^\*\/]|[\r\n])))*\*+\//g, function (match) {
+			return '___comment' + arr.push(match);
+		});
+		//Escape strings
+		str = str.replace(/\'[^']*\'/g, function (match) {
+			return '___string' + arr.push(match);
+		});
+		str = str.replace(/\"[^"]*\"/g, function (match) {
+			return '___string' + arr.push(match);
+		});
+		str = str.replace(/\`[^`]*\`/g, function (match) {
+			return '___string' + arr.push(match);
+		});
+		return str;
+	}
+
+	function unescape (str, arr) {
+		//unescape strings
+		arr.forEach(function (rep, i) {
+			str = str.replace('___string' + (i+1), rep);
+		});
+
+		//unhide comments
+		arr.forEach(function (value, i) {
+			str = str.replace('___comment' + (i+1), value);
+		});
+		return str;
+	}
+
+
 	//register macro, #define directive
 	function define (str) {
-		var data = /([a-z0-9_]*)(?:\(([^\(\)]*)\))?/i.exec(str);
+		var data = /([a-z0-9_$]*)(?:\(([^\(\)]*)\))?/i.exec(str);
 		var name = data[1];
 		var args = data[2];
 
@@ -137,48 +192,17 @@ function preprocess (what, how) {
 				args = [];
 			}
 
-
-			// 	//replace each stringified arg as is
-			// 	value = value.replace(new RegExp(`#${name}`, 'g'), '\' + \'"' + name + '"\' + \'');
-
-			// 	//replace each simple name notion
-			// 	value = value.replace(new RegExp(`\\b${name}\\b`, 'g'), '\' + ' + name + ' + \'');
-
-
-
-			// 	return `var ${name} = arguments[${pos}] || '';`;
-			// });
-
 			macros[name] = function (argValues) {
 				var result = value;
 
-				var strings = [];
-				//Escape strings
-				result = result.replace(/\'[^']*\'/g, function (match) {
-					return '×' + strings.push(match);
-				});
-				result = result.replace(/\"[^"]*\"/g, function (match) {
-					return '×' + strings.push(match);
-				});
-				result = result.replace(/\`[^`]*\`/g, function (match) {
-					return '×' + strings.push(match);
-				});
-
 				//for each arg - replace it’s occurence in `result`
 				for (var i = 0; i < args.length; i++) {
-					//FIXME: probably we have to ignore within-tokens replacements like aXbc
-					result = result.replace(new RegExp(`${args[i]}`, 'g'), function (match) {
-						return match;
-					});
+					result = processDefinition(result, args[i], argValues[i]);
 				}
 
+				result = process(result);
 
-				//unescape strings
-				strings.forEach(function (rep, i) {
-					result = result.replace('×' + (i+1), rep);
-				});
-
-				return process(result);
+				return result;
 			};
 		}
 
