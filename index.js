@@ -50,6 +50,15 @@ function preprocess (what, how) {
 
 	//process chunk of a string by finding out macros and replacing them
 	function process (str) {
+		//hide comments
+		var comments = [];
+		str = str.replace(/\/\/[^\n]*$/mg, function (match) {
+			return '___comment' + comments.push(match);
+		});
+		str = str.replace(/\/\*([^\*]|[\r\n]|(\*+([^\*\/]|[\r\n])))*\*+\//g, function (match) {
+			return '___comment' + comments.push(match);
+		});
+
 		//for each registered macro - find it’s mention in the code and make replacement
 		for (var name in macros) {
 			//fn macro
@@ -62,7 +71,7 @@ function preprocess (what, how) {
 
 				var re = new RegExp(name + '\\s*\\(___([0-9]+)\\)');
 
-				result = processParens(parts[0]);
+				str = processParens(parts[0]);
 
 				//process list of cross-referenced parentheses
 				function processParens (str) {
@@ -91,8 +100,6 @@ function preprocess (what, how) {
 						return paren.stringify(restParts, {flat: true, escape: '___'});
 					}
 				};
-
-				return result;
 			}
 			//value replacement
 			else {
@@ -103,6 +110,11 @@ function preprocess (what, how) {
 			}
 		}
 
+
+		//unhide comments
+		comments.forEach(function (value, i) {
+			str = str.replace('___comment' + (i+1), value);
+		});
 
 		return str;
 	}
@@ -138,33 +150,35 @@ function preprocess (what, how) {
 			// });
 
 			macros[name] = function (argValues) {
-				var str = value;
+				var result = value;
 
 				var strings = [];
-
 				//Escape strings
-				str = str.replace(/\'[^']*\'/g, function (match) {
+				result = result.replace(/\'[^']*\'/g, function (match) {
 					return '×' + strings.push(match);
 				});
-				str = str.replace(/\"[^"]*\"/g, function (match) {
+				result = result.replace(/\"[^"]*\"/g, function (match) {
 					return '×' + strings.push(match);
 				});
-				str = str.replace(/\`[^`]*\`/g, function (match) {
+				result = result.replace(/\`[^`]*\`/g, function (match) {
 					return '×' + strings.push(match);
 				});
 
-				//for each arg - replace it’s occurence in `str`
+				//for each arg - replace it’s occurence in `result`
 				for (var i = 0; i < args.length; i++) {
 					//FIXME: probably we have to ignore within-tokens replacements like aXbc
-					str = str.replace(new RegExp(`${args[i]}`, 'g'), argValues[i]);
+					result = result.replace(new RegExp(`${args[i]}`, 'g'), function (match) {
+						return match;
+					});
 				}
+
 
 				//unescape strings
 				strings.forEach(function (rep, i) {
-					str = str.replace('×' + (i+1), rep);
+					result = result.replace('×' + (i+1), rep);
 				});
 
-				return process(str);
+				return process(result);
 			};
 		}
 

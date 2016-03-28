@@ -73,18 +73,24 @@ test('Macro arguments', function () {
 	});
 
 	test('Empty arg', function () {
-		// min(, b);
-		// min(a, );
-		// min(,);
-		// min((,),);
-		// ((   ) < (b) ? (   ) : (b));
-		// ((a  ) < ( ) ? (a  ) : ( ));
-		// ((   ) < ( ) ? (   ) : ( ));
-		// (((,)) < ( ) ? ((,)) : ( ));
+		assert.equal(clean(prepr(`
+			#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+			min(, b);
+			min(a, );
+			min(,);
+			min((,),);
+		`)), clean(`
+			(() < (b) ? () : (b));
+			((a) < () ? (a) : ());
+			(() < () ? () : ());
+			(((,)) < () ? ((,)) : ());
+		`));
 	})
 
-	// min()      error--> macro "min" requires 2 arguments, but only 1 given
-	// min(,,)    error--> macro "min" passed 3 arguments, but takes just 2
+	test.skip('Throw bad args errors', function () {
+		// min()      error--> macro "min" requires 2 arguments, but only 1 given
+		// min(,,)    error--> macro "min" passed 3 arguments, but takes just 2
+	})
 
 	test('Ignore strings', function () {
 		assert.equal(clean(prepr(`
@@ -96,27 +102,31 @@ test('Macro arguments', function () {
 	});
 });
 
-test('Stringification', function () {
-	assert.equal(clean(prepr(`
-		#define WARN_IF(EXP) \
-		do { if (EXP) \
-			fprintf (stderr, "Warning: " #EXP "!"); } \
-		while (0)
-		WARN_IF (x == 0);
-	`)), clean(`
-		do { if (x == 0) fprintf (stderr, "Warning: " "x == 0" "!"); } while (0);
-	`));
+test.only('Stringification', function () {
+	test('Multiline example', function () {
+		assert.equal(clean(prepr(`
+			#define WARN_IF(EXP) \
+			do { if (EXP) \
+				fprintf (stderr, "Warning: " #EXP "!"); } \
+			while (0)
+			WARN_IF (x == 0);
+		`)), clean(`
+			do { if (x == 0) fprintf (stderr, "Warning: " "x == 0" "!"); } while (0);
+		`));
+	});
 
-	assert.equal(clean(prepr(`
-	#define xstr(s) str(s)
-	#define str(s) #s
-	#define foo 4
-	str (foo);
-	xstr (foo);
-	`)), clean(`
-	"foo";
-	"4";
-	`));
+	test.only('Nested stringification', function () {
+		assert.equal(clean(prepr(`
+		#define xstr(s) str(s)
+		#define str(s) #s
+		#define foo 4
+		str (foo);
+		/* xstr (foo); */
+		`)), clean(`
+		"foo";
+		"4";
+		`));
+	});
 });
 
 test('Concatenation', function () {
