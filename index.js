@@ -17,8 +17,8 @@ function preprocess (what, how) {
 	//defined macros
 	//FIXME: provide real values here
 	var macros = extend({
-		// __LINE__: 0,
-		// __FILE__: '',
+		__LINE__: 0,
+		__FILE__: '_',
 		__VERSION__: 100,
 		defined: function () {
 			return [].slice.call(arguments).every(function (arg) {
@@ -86,6 +86,12 @@ function preprocess (what, how) {
 			}
 			else if (/^#if/.test(directive[0])) {
 				str = processIf(str);
+			}
+			else {
+				//drop directive line
+				var directiveDecl = /\n/m.exec(str);
+				chunk = str.slice(0, directiveDecl.index) + '\n';
+				str = str.slice(directiveDecl.index)
 			}
 
 			return chunk + process(str);

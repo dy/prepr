@@ -298,3 +298,35 @@ test('if, ifdef, else, elif, endif', function () {
 		`));
 	});
 });
+
+
+
+test('#error, #pragma, #extension, #anything', function () {
+	assert.equal(clean(prepr(`
+		#error 1
+		#pragma a()\
+		b()
+		#extension all: disable
+
+		#extension name : behaviour
+
+		#pragma optimize(on)
+
+		#pragma STDGL
+	`)), clean(`
+		#error 1
+		#pragma a()\
+		b()
+		#extension all: disable
+
+		#extension name : behaviour
+
+		#pragma optimize(on)
+
+		#pragma STDGL
+	`));
+});
+
+test('#line, #version', function () {
+
+});
