@@ -161,10 +161,13 @@ test('Concatenation', function () {
 	`));
 });
 
-test('Variadic macros', function () {
-	// #define eprintf(...) fprintf (stderr, __VA_ARGS__)
-	//  eprintf ("%s:%d: ", input_file, lineno)
-	//         ==>  fprintf (stderr, "%s:%d: ", input_file, lineno)
+test.skip('Variadic macros', function () {
+	assert.equal(clean(prepr(`
+		#define eprintf(...) fprintf (stderr, __VA_ARGS__)
+		eprintf ("%s:%d: ", input_file, lineno)
+	`)), clean(`
+		fprintf (stderr, "%s:%d: ", input_file, lineno)
+	`));
 
 	// #define eprintf(args...) fprintf (stderr, args) ← replaces VA_ARGS
 
@@ -176,9 +179,122 @@ test('Variadic macros', function () {
 	// #define eprintf(format, args...) fprintf (stderr, format , ##args)
 });
 
-// #define f(x) x x
-// f (1
-// #undef f
-// #define f 2
-// f)
-//→ 1 2 1 2
+test.skip('nested macro directives', function () {
+	// #define f(x) x x
+	// f (1
+	// #undef f
+	// #define f 2
+	// f)
+	//→ 1 2 1 2
+});
+
+test('if, ifdef, else, elif, endif', function () {
+	test('ifdef', function () {
+		assert.equal(clean(prepr(`
+			#ifdef MACRO
+			x
+			#else
+			!x
+			#endif /* MACRO */
+
+			#define MACRO true
+
+			#ifdef MACRO
+			y
+			#endif /* MACRO */
+
+			#undef MACRO
+			#ifndef MACRO
+			z
+			#endif
+		`)), clean(`
+			!x
+			y
+			z
+		`));
+	})
+
+	test('if', function () {
+		assert.equal(clean(prepr(`
+			#if A === 1
+			fail
+			#endif /* expression */
+
+			#define A 1
+			#if A === 1
+			a1
+			#endif /* expression */
+
+			#define A 2
+			#if A === 1
+			fail
+			#else
+			a2
+			#endif /* expression */
+		`)), clean(`
+			a1
+			a2
+		`));
+	});
+
+	test('nested ifs', function () {
+		assert.equal(clean(prepr(`
+			#define X 3
+			#if X == 1
+			1
+			#else /* X != 1 */
+			#if X == 2
+			2
+			#else /* X != 2 */
+			!2
+			#endif /* X != 2 */
+			#endif /* X != 1 */
+		`)), clean(`
+			!2
+		`));
+	});
+
+	test('elif', function () {
+		assert.equal(clean(prepr(`
+			#define X 2
+			#if X == 1
+			1
+			#elif X == 2
+			2
+			#else /* X != 2 and X != 1*/
+			3
+			#endif /* X != 2 and X != 1*/
+		`)), clean(`
+			2
+		`));
+	});
+
+	test('defined', function () {
+		assert.equal(clean(prepr(`
+			#define __ns16000__ 1
+			#if defined (__vax__) || defined (__ns16000__)
+			1
+			#endif
+
+			#define BUFSIZE 0
+			#if defined BUFSIZE// && BUFSIZE >= 1024
+			2
+			#endif
+		`)), clean(`
+			1
+			2
+		`));
+	});
+
+	test('else', function () {
+		assert.equal(clean(prepr(`
+			#if 0
+			text-if-true
+			#else /* Not expression */
+			text-if-false
+			#endif /* Not expression */
+		`)), clean(`
+			text-if-false
+		`));
+	});
+});

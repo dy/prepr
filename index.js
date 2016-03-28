@@ -4,6 +4,7 @@
  */
 
 var paren = require('parenthesis');
+var balanced = require('balanced-match');
 
 
 /**
@@ -19,26 +20,41 @@ function preprocess (what, how) {
 		// __LINE__: 0,
 		// __FILE__: '',
 		// __VERSION__: 100
+		defined: function (args) {
+			return args && args.every(function (arg) {
+				return macros[arg] != null;
+			});
+		}
 	};
 
 
-	var chunk, nextDirective;
+	var chunk, directive;
 
 	//process everything which is before the next directive
-	while (nextDirective = /#([A-Za-z0-9_$]+)\s*(.*)/ig.exec(source)) {
-		chunk = source.slice(0, nextDirective.index);
+	while (directive = /#([A-Za-z0-9_$]+)\s*(.*)/ig.exec(source)) {
+		//insert skipped chunk
+		chunk = source.slice(0, directive.index);
 		result += process(chunk);
 
 		//shorten source
-		source = source.slice(nextDirective.index + nextDirective[0].length);
+		source = source.slice(directive.index);
+
+		var directiveName = directive[1];
+		var directiveValue = directive[2];
 
 		//process directive
-		var directiveName = nextDirective[1];
 		if (/^def/.test(directiveName)) {
-			define(nextDirective[2]);
+			//FIXME: make define return source
+			define(directiveValue);
+			source = source.slice(directive[0].length);
 		}
 		else if (/^undef/.test(directiveName)) {
-			undefine(nextDirective[2]);
+			//FIXME: make undefine return source
+			undefine(directiveValue);
+			source = source.slice(directive[0].length);
+		}
+		else if (/^if/.test(directiveName)) {
+			source = processIf(source);
 		}
 	}
 
@@ -49,10 +65,14 @@ function preprocess (what, how) {
 
 
 	//process chunk of a string by finding out macros and replacing them
+	//FIXME: make process a main entry, calling itself on the rest of file, to parse nested directives eg
 	function process (str) {
 		var arr = [];
 
 		str = escape(str, arr);
+
+		//replace all defined X to defined (X)
+		str = str.replace(/\bdefined\s*([A-Za-z0-9_$]+)/g, 'defined($1)');
 
 		//for each registered macro do it’s call
 		for (var name in macros) {
@@ -151,20 +171,20 @@ function preprocess (what, how) {
 	function escape (str, arr) {
 		//hide comments
 		str = str.replace(/\/\/[^\n]*$/mg, function (match) {
-			return '___comment' + arr.push(match);
+			return ' ___comment' + arr.push(match);
 		});
 		str = str.replace(/\/\*([^\*]|[\r\n]|(\*+([^\*\/]|[\r\n])))*\*+\//g, function (match) {
-			return '___comment' + arr.push(match);
+			return ' ___comment' + arr.push(match);
 		});
 		//Escape strings
 		str = str.replace(/\'[^']*\'/g, function (match) {
-			return '___string' + arr.push(match);
+			return ' ___string' + arr.push(match);
 		});
 		str = str.replace(/\"[^"]*\"/g, function (match) {
-			return '___string' + arr.push(match);
+			return ' ___string' + arr.push(match);
 		});
 		str = str.replace(/\`[^`]*\`/g, function (match) {
-			return '___string' + arr.push(match);
+			return ' ___string' + arr.push(match);
 		});
 		return str;
 	}
@@ -172,15 +192,16 @@ function preprocess (what, how) {
 	function unescape (str, arr) {
 		//unescape strings
 		arr.forEach(function (rep, i) {
-			str = str.replace('___string' + (i+1), rep);
+			str = str.replace(' ___string' + (i+1), rep);
 		});
 
 		//unhide comments
 		arr.forEach(function (value, i) {
-			str = str.replace('___comment' + (i+1), value);
+			str = str.replace(' ___comment' + (i+1), value);
 		});
 		return str;
 	}
+
 
 
 	//register macro, #define directive
@@ -225,8 +246,88 @@ function preprocess (what, how) {
 
 	//unregister macro, #undef directive
 	function undefine (str) {
-		var name = /[^\s\(\)]+/.exec(str)[0];
+		var name = /[A-Za-z0-9_$]+/.exec(str)[0];
 		delete macros[name];
+	}
+
+	//process if/else/ifdef/elif/ifndef/defined
+	function processIf (str) {
+		var match = balanced('#if', '#endif', str)
+
+		//if no nested ifs - means we are in clause, return as is
+		if (!match) return str;
+
+		var body = match.body;
+		var post = match.post;
+		var elseBody = '';
+
+		//find else part
+		var matchElse;
+		if (matchElse = /^\s*#else[^\n\r]*$/m.exec(body)) {
+			elseBody = body.slice(matchElse.index + matchElse[0].length);
+			body = body.slice(0, matchElse.index);
+		}
+
+		//ifdef
+		if(/^def/.test(body)) {
+			body = body.slice(3);
+			var nameMatch = /[A-Za-z0-9_$]+/.exec(body);
+			var name = nameMatch[0];
+			body = body.slice(name.length + nameMatch.index);
+			if (macros[name] != null) str = process(body);
+			else str = process(elseBody);
+		}
+		//ifndef
+		else if (/^ndef/.test(body)) {
+			body = body.slice(4);
+			var nameMatch = /[A-Za-z0-9_$]+/.exec(body);
+			var name = nameMatch[0];
+			body = body.slice(name.length + nameMatch.index);
+			if (macros[name] == null) str = process(body);
+			else str = process(elseBody);
+		}
+		//if
+		else {
+			//split elifs
+			var clauses = body.split(/^\s*#elif\s+/m);
+
+			var result = false;
+
+			//find first triggered clause
+			for (var i = 0; i < clauses.length; i++) {
+				var clause = clauses[i];
+
+				var exprMatch = /\s*(.*)/.exec(clause);
+				var expr = exprMatch[0];
+				clause = clause.slice(expr.length + exprMatch.index);
+
+				//eval expression
+				expr = process(expr);
+
+				try {
+					result = eval(expr);
+				} catch (e) {
+					result = false;
+				}
+
+				if (result) {
+					str = process(clause);
+					break;
+				}
+			}
+
+			//else clause
+			if (!result) {
+				str = process(elseBody);
+			}
+		}
+
+
+		//trim post till the first endline, because there may be comments after #endif
+		var match = /[\n\r]/.exec(post);
+		if (match) post = post.slice(match.index);
+
+		return str + post;
 	}
 }
 
