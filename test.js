@@ -49,38 +49,51 @@ test('Function macros', function () {
 	`));
 });
 
-test.only('Macro arguments', function () {
-	assert.equal(clean(prepr(`
-		#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
-		x = min(a, b);
-		y = min(1, 2);
-		z = min(a + 28, p);
-		min (min (a, b), c);
-	`)), clean(`
-		x = ((a) < (b) ? (a) : (b));
-		y = ((1) < (2) ? (1) : (2));
-		z = ((a + 28) < (p) ? (a + 28) : (p));
-		((((a) < (b) ? (a) : (b))) < (c) ? (((a) < (b) ? (a) : (b))) : (c));
-	`));
+test('Macro arguments', function () {
+	test('Fn call', function () {
+		assert.equal(clean(prepr(`
+			#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+			x = min(a, b);
+			y = min(1, 2);
+			z = min(a + 28, p);
+		`)), clean(`
+			x = ((a) < (b) ? (a) : (b));
+			y = ((1) < (2) ? (1) : (2));
+			z = ((a + 28) < (p) ? (a + 28) : (p));
+		`));
+	})
 
-	// min(, b);
-	// min(a, );
-	// min(,);
-	// min((,),);
-	// ((   ) < (b) ? (   ) : (b));
-	// ((a  ) < ( ) ? (a  ) : ( ));
-	// ((   ) < ( ) ? (   ) : ( ));
-	// (((,)) < ( ) ? ((,)) : ( ));
+	test('Nested fn', function () {
+		assert.equal(clean(prepr(`
+			#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+			min (min (a, b), c);
+		`)), clean(`
+			((((a) < (b) ? (a) : (b))) < (c) ? (((a) < (b) ? (a) : (b))) : (c));
+		`));
+	});
+
+	test('Empty arg', function () {
+		// min(, b);
+		// min(a, );
+		// min(,);
+		// min((,),);
+		// ((   ) < (b) ? (   ) : (b));
+		// ((a  ) < ( ) ? (a  ) : ( ));
+		// ((   ) < ( ) ? (   ) : ( ));
+		// (((,)) < ( ) ? ((,)) : ( ));
+	})
 
 	// min()      error--> macro "min" requires 2 arguments, but only 1 given
 	// min(,,)    error--> macro "min" passed 3 arguments, but takes just 2
 
-	assert.equal(clean(prepr(`
-		#define foo(x) x, "x"
-		foo(bar);
-	`)), clean(`
-		bar, "x";
-	`));
+	test('Ignore strings', function () {
+		assert.equal(clean(prepr(`
+			#define foo(x) x, "x"
+			foo(bar);
+		`)), clean(`
+			bar, "x";
+		`));
+	});
 });
 
 test('Stringification', function () {

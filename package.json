@@ -4,9 +4,12 @@
   "description": "Preprocess string in C/GLSL-preprocessor fashion",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "test:browser": "budo test.js"
   },
-  "files": ["index.js"],
+  "files": [
+    "index.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dfcreative/prepr.git"
@@ -29,5 +32,8 @@
   "devDependencies": {
     "cln": "^1.0.0",
     "tst": "^1.3.1"
+  },
+  "dependencies": {
+    "parenthesis": "^3.0.0"
   }
 }
