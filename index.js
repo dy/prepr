@@ -31,29 +31,22 @@ function preprocess (what, how) {
 	var chunk, directive;
 
 	//process everything which is before the next directive
-	while (directive = /#([A-Za-z0-9_$]+)\s*(.*)/ig.exec(source)) {
+	while (directive = /#[A-Za-z0-9_$]+/ig.exec(source)) {
 		//insert skipped chunk
 		chunk = source.slice(0, directive.index);
 		result += process(chunk);
 
-		//shorten source
+		//shorten source up to directive
 		source = source.slice(directive.index);
 
-		var directiveName = directive[1];
-		var directiveValue = directive[2];
-
 		//process directive
-		if (/^def/.test(directiveName)) {
-			//FIXME: make define return source
-			define(directiveValue);
-			source = source.slice(directive[0].length);
+		if (/^#def/.test(directive[0])) {
+			source = define(source);
 		}
-		else if (/^undef/.test(directiveName)) {
-			//FIXME: make undefine return source
-			undefine(directiveValue);
-			source = source.slice(directive[0].length);
+		else if (/^#undef/.test(directive[0])) {
+			source = undefine(source);
 		}
-		else if (/^if/.test(directiveName)) {
+		else if (/^#if/.test(directive[0])) {
 			source = processIf(source);
 		}
 	}
@@ -206,11 +199,13 @@ function preprocess (what, how) {
 
 	//register macro, #define directive
 	function define (str) {
-		var data = /([A-Za-z0-9_$]*)(?:\(([^\(\)]*)\))?/i.exec(str);
+		var data = /#[A-Za-z]+\s*([A-Za-z0-9_$]*)(?:\(([^\(\)]*)\))?\s*(.*)/i.exec(str);
+		str = str.slice(data.index + data[0].length);
+
 		var name = data[1];
 		var args = data[2];
 
-		var value = str.slice(data[0].length).trim();
+		var value = data[3];
 
 		//register function macro
 		//#define FOO(A, B) (expr)
@@ -242,12 +237,16 @@ function preprocess (what, how) {
 		else {
 			macros[name] = value;
 		}
+
+		return str;
 	}
 
 	//unregister macro, #undef directive
 	function undefine (str) {
-		var name = /[A-Za-z0-9_$]+/.exec(str)[0];
-		delete macros[name];
+		var data = /#[A-Za-z0-9_]+\s*([A-Za-z0-9_$]+)/.exec(str);
+		delete macros[data[1]];
+
+		return str.slice(data.index + data[0].length);
 	}
 
 	//process if/else/ifdef/elif/ifndef/defined
