@@ -145,9 +145,20 @@ test('Concatenation', function () {
 		};
 	`));
 
-
-
-
+	assert.equal(clean(prepr(`
+		#define COMMAND(NAME)  { #NAME, command_ ## NAME }
+		struct command =
+		{
+			COMMAND (quit),
+			COMMAND (help),
+		};
+	`)), clean(`
+		struct command =
+		{
+			{ "quit", command_quit },
+			{ "help", command_help },
+		};
+	`));
 });
 
 test('Variadic macros', function () {

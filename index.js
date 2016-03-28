@@ -25,7 +25,7 @@ function preprocess (what, how) {
 	var chunk, nextDirective;
 
 	//process everything which is before the next directive
-	while (nextDirective = /#([a-z0-9_$]+)\s*(.*)/ig.exec(source)) {
+	while (nextDirective = /#([A-Za-z0-9_$]+)\s*(.*)/ig.exec(source)) {
 		chunk = source.slice(0, nextDirective.index);
 		result += process(chunk);
 
@@ -121,15 +121,24 @@ function preprocess (what, how) {
 		var arr = [];
 		str = escape(str, arr);
 
-		//apply replacements
-		str = str.replace(new RegExp(`([^#a-z0-9_$]|^)(${name})([^a-z0-9_$]|$)`, 'ig'), function (match, pre, name, post) {
+		//apply concatenation ENTRY ## something → valueSomething
+		str = str.replace(new RegExp(`([^#A-Za-z0-9_$]|^)${name}\\s*##\\s*([A-Za-z0-9_$]*)`, 'g'), function (match, pre, post) {
+			return pre + value + post;
+		});
+		str = str.replace(new RegExp(`([A-Za-z0-9_$]*)\\s*##\\s*${name}([^A-Za-z0-9_$]|$)`, 'g'), function (match, pre, post) {
+			return pre + value + post;
+		});
+
+		//replace definition entries
+		str = str.replace(new RegExp(`([^#A-Za-z0-9_$]|^)${name}([^A-Za-z0-9_$]|$)`, 'g'), function (match, pre, post) {
 
 			//insert definition
 			if (macros[value] != null && !(macros[value] instanceof Function)) value = macros[value];
 
 			return pre + value + post;
 		});
-		str = str.replace(new RegExp(`(#${name})([^a-z0-9_$]|$)`, 'ig'), function (match, name, post) {
+		//replace stringifications
+		str = str.replace(new RegExp(`#${name}([^A-Za-z0-9_$]|$)`, 'g'), function (match, post) {
 			return  '"' + value + '"' + post;
 		});
 
@@ -176,7 +185,7 @@ function preprocess (what, how) {
 
 	//register macro, #define directive
 	function define (str) {
-		var data = /([a-z0-9_$]*)(?:\(([^\(\)]*)\))?/i.exec(str);
+		var data = /([A-Za-z0-9_$]*)(?:\(([^\(\)]*)\))?/i.exec(str);
 		var name = data[1];
 		var args = data[2];
 
