@@ -27,67 +27,71 @@ function preprocess (what, how) {
 		}
 	}, how);
 
-
-	var chunk, directive;
-
-	//process everything which is before the next directive
-	while (directive = /#[A-Za-z0-9_$]+/ig.exec(source)) {
-		//insert skipped chunk
-		chunk = source.slice(0, directive.index);
-		result += process(chunk);
-
-		//shorten source up to directive
-		source = source.slice(directive.index);
-
-		//process directive
-		if (/^#def/.test(directive[0])) {
-			source = define(source);
-		}
-		else if (/^#undef/.test(directive[0])) {
-			source = undefine(source);
-		}
-		else if (/^#if/.test(directive[0])) {
-			source = processIf(source);
-		}
-	}
-
-	//process the remainder
-	result += process(source);
-
-	return result;
+	return process(source);
 
 
 	//process chunk of a string by finding out macros and replacing them
-	//FIXME: make process a main entry, calling itself on the rest of file, to parse nested directives eg
 	function process (str) {
+		if (!str) return '';
+
 		var arr = [];
 
-		str = escape(str, arr);
+		var chunk = str;
+
+		//find next directive, get chunk to process before it
+		var directive = /#[A-Za-z0-9_$]+/ig.exec(str);
+
+		//get chunk to process - before next call
+		if (directive) {
+			chunk = chunk.slice(0, directive.index);
+			str = str.slice(directive.index);
+		}
+
+
+		//escape bad things
+		chunk = escape(chunk, arr);
 
 		//replace all defined X to defined (X)
-		str = str.replace(/\bdefined\s*([A-Za-z0-9_$]+)/g, 'defined($1)');
+		chunk = chunk.replace(/\bdefined\s*([A-Za-z0-9_$]+)/g, 'defined($1)');
+
 
 		//for each registered macro do it’s call
 		for (var name in macros) {
 			//fn macro
 			if (macros[name] instanceof Function) {
-				str = processFunction(str, name, macros[name]);
+				chunk = processFunction(chunk, name, macros[name]);
 			}
 		}
 
-		str = escape(str, arr);
+		chunk = escape(chunk, arr);
 
 		//for each defined var do replacement
 		for (var name in macros) {
 			//value replacement
 			if (!(macros[name] instanceof Function)) {
-				str = processDefinition(str, name, macros[name]);
+				chunk = processDefinition(chunk, name, macros[name]);
 			}
 		}
 
-		str = unescape(str, arr);
+		chunk = unescape(chunk, arr);
 
-		return str;
+
+		//process directive
+		if (directive) {
+			if (/^#def/.test(directive[0])) {
+				str = define(str);
+			}
+			else if (/^#undef/.test(directive[0])) {
+				str = undefine(str);
+			}
+			else if (/^#if/.test(directive[0])) {
+				str = processIf(str);
+			}
+
+			return chunk + process(str);
+		}
+
+		return chunk;
 	}
 
 	//replace defined macros from a string
