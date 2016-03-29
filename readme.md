@@ -7,19 +7,47 @@ var prepr = require('prepr');
 
 prepr(`
 	#define A 2;
+
+	#ifdef A
 	var a = A;
+	#endif
+
+	#if __LINE__ > 40
+	//too far
+	#elif __LINE__ < 10
+	//too close
+	#else
+	//about right
+	#endif
+
 	var b = myVar;
-	var c = myString('xyz');
+	var c = myMacro('xyz');
 `, {
-	myVar: 1,
-	myMacro: function (arg) { return arg; }
-	//...other custom defininitions
+	//remove processed directives from source
+	remove: true,
+
+	//custom macros
+	define: {
+		myVar: 1,
+		myMacro: function (arg) { return arg; }
+	},
+
+	//custom directives
+	directives: {
+		extension: function (arg) {
+			registerExtension(arg);
+			return '';
+		}
+	}
 });
 
 // ↓
 
 `
 var a = 2;
+
+//about right
+
 var b = 1;
 var c = 'xyz';
 `

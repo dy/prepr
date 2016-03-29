@@ -327,6 +327,86 @@ test('#error, #pragma, #extension, #anything', function () {
 	`));
 });
 
-test('#line, #version', function () {
+test.skip('#line, #version', function () {
+	assert.equal(clean(prepr(`
+		var a = __LINE__;
+		#line 10;
+		var b = __LINE__;
+		#line -10;
+		var c = __LINE__;
+		var d = __LINE__;
+		var e = __VERSION__;
+		#version 440 core;
+		var f = __VERSION__;
+	`)), clean(`
+		var a = 1;
+		var b = 11;
+		var c = -10;
+		var d = -9;
+		var e = 100;
+		var f = 440;
+	`));
+});
 
+
+test('Options - readme example', function () {
+
+});
+
+
+test('Some error cases', function () {
+	test('Undefined directive arg');
+	test('Not enough args to macro');
+});
+
+
+test('Some real use-case', function () {
+	var src = `
+		precision highp int;
+		precision highp float;
+		precision highp vec2;
+		precision highp vec3;
+		precision highp vec4;
+		#line 0
+
+		#define X(a) Y \
+		  asdf \
+		  barry
+
+		varying vec2 vTexcoord;
+		varying vec3 vPosition;
+		uniform mat4 proj, view;
+
+		    attribute vec3 position;
+		    attribute vec2 texcoord;
+
+		    void main(){
+		        vTexcoord = texcoord;
+		        vPosition = position;
+		        gl_Position = proj * view * vec4(position, 1.0);
+		    }
+	`;
+
+	var res = `
+		precision highp int;
+		precision highp float;
+		precision highp vec2;
+		precision highp vec3;
+		precision highp vec4;
+
+		varying vec2 vTexcoord;
+		varying vec3 vPosition;
+		uniform mat4 proj, view;
+
+		    attribute vec3 position;
+		    attribute vec2 texcoord;
+
+		    void main(){
+		        vTexcoord = texcoord;
+		        vPosition = position;
+		        gl_Position = proj * view * vec4(position, 1.0);
+		    }
+	`
+
+	assert.equal(clean(prepr(src)), clean(res));
 });

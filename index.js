@@ -87,10 +87,20 @@ function preprocess (what, how) {
 			else if (/^#if/.test(directive[0])) {
 				str = processIf(str);
 			}
+			else if (/^#line/.test(directive[0])) {
+				var data = /#[A-Za-z0-9_]+\s*([-0-9]+)?[^\n]*/.exec(str);
+				macros.__LINE__ = parseInt(data[1]);
+				str = str.slice(data.index + data[0].length);
+			}
+			else if (/^#version/.test(directive[0])) {
+				var data = /#[A-Za-z0-9_]+\s*([-0-9]+)?[^\n]*/.exec(str);
+				macros.__VERSION__ = parseInt(data[1]);
+				str = str.slice(data.index + data[0].length);
+			}
 			else {
 				//drop directive line
 				var directiveDecl = /\n/m.exec(str);
-				chunk = str.slice(0, directiveDecl.index) + '\n';
+				chunk += str.slice(0, directiveDecl.index) + '\n';
 				str = str.slice(directiveDecl.index)
 			}
 
