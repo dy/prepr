@@ -87,9 +87,22 @@ test('Macro arguments', function () {
 		`));
 	})
 
-	test.skip('Throw bad args errors', function () {
-		// min()      error--> macro "min" requires 2 arguments, but only 1 given
-		// min(,,)    error--> macro "min" passed 3 arguments, but takes just 2
+	test('Throw bad args errors', function () {
+		assert.throws(function () {
+			prepr(`
+				#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+				min();
+			`);
+			//macro "min" requires 2 arguments, but only 1 given
+		});
+
+		assert.throws(function () {
+			prepr(`
+				#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+				min(,,)
+			`);
+			//macro "min" passed 3 arguments, but takes just 2
+		});
 	})
 
 	test('Ignore strings', function () {
@@ -161,7 +174,7 @@ test('Concatenation', function () {
 	`));
 });
 
-test.skip('Variadic macros', function () {
+test.skip('FIXME Variadic macros', function () {
 	assert.equal(clean(prepr(`
 		#define eprintf(...) fprintf (stderr, __VA_ARGS__)
 		eprintf ("%s:%d: ", input_file, lineno)
@@ -179,7 +192,7 @@ test.skip('Variadic macros', function () {
 	// #define eprintf(format, args...) fprintf (stderr, format , ##args)
 });
 
-test.skip('nested macro directives', function () {
+test.skip('FIXME nested macro directives', function () {
 	// #define f(x) x x
 	// f (1
 	// #undef f
@@ -327,7 +340,7 @@ test('#error, #pragma, #extension, #anything', function () {
 	`));
 });
 
-test.skip('#line, #version', function () {
+test.skip('FIXME: #line, #version', function () {
 	assert.equal(clean(prepr(`
 		var a = __LINE__;
 		#line 10;
@@ -349,14 +362,74 @@ test.skip('#line, #version', function () {
 });
 
 
-test('Options - readme example', function () {
+test.skip('FIXME: Options - readme example', function () {
+	assert.equal(clean(prepr(`
+		#define A 2;
 
+		#ifdef A
+		var a = A;
+		#endif
+
+		#if __LINE__ > 40
+		//too far
+		#elif __LINE__ < 10
+		//too close
+		#else
+		//about right
+		#endif
+
+		var b = myVar;
+		var c = myMacro('xyz');
+	`, {
+		//remove processed directives from source
+		remove: false,
+
+		//custom macros
+		define: {
+			myVar: 1,
+			myMacro: function (arg) { return arg; }
+		},
+
+		//custom directives
+		directives: {
+			extension: function (arg) {
+				registerExtension(arg);
+				return '';
+			}
+		}
+	})), clean(`
+		#define A 2;
+
+		#ifdef A
+	`));
 });
 
 
 test('Some error cases', function () {
-	test('Undefined directive arg');
-	test('Not enough args to macro');
+	test('Undefined directive arg', function () {
+		assert.equal(clean(prepr(`
+			#abc
+			1;
+			2;
+			#undefine
+			3;
+			4;
+
+		`)), clean(`
+			#abc
+			1;
+			2;
+			3;
+			4;
+		`));
+		assert.throws(function () {
+			prepr(`
+				#define
+				#define\
+				123
+			`);
+		})
+	});
 });
 
 

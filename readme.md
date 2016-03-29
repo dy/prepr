@@ -12,9 +12,9 @@ prepr(`
 	var a = A;
 	#endif
 
-	#if __LINE__ > 40
+	#if A > 40
 	//too far
-	#elif __LINE__ < 10
+	#elif A < 1
 	//too close
 	#else
 	//about right
@@ -23,22 +23,8 @@ prepr(`
 	var b = myVar;
 	var c = myMacro('xyz');
 `, {
-	//remove processed directives from source
-	remove: true,
-
-	//custom macros
-	define: {
-		myVar: 1,
-		myMacro: function (arg) { return arg; }
-	},
-
-	//custom directives
-	directives: {
-		extension: function (arg) {
-			registerExtension(arg);
-			return '';
-		}
-	}
+	myVar: 1,
+	myMacro: function (arg) { return arg; }
 });
 
 // ↓

@@ -20,7 +20,7 @@ function preprocess (what, how) {
 		__LINE__: 0,
 		__FILE__: '_',
 		__VERSION__: 100,
-		defined: function () {
+		defined: function (arg) {
 			return [].slice.call(arguments).every(function (arg) {
 				return macros[arg] != null;
 			});
@@ -128,14 +128,20 @@ function preprocess (what, how) {
 			return part.replace(re, function (match, argsPartIdx) {
 				//parse arguments
 				var args = parts[argsPartIdx];
-				args = args.split(/\s*,\s*/);
-				args = args.map(function (arg) {
-					var argParts = parts.slice();
-					argParts[0] = arg;
-					return paren.stringify(argParts, {flat: true, escape: '___'});
-				}).map(function (arg) {
-					return arg;
-				});
+				if (args.trim().length) {
+					args = args.split(/\s*,\s*/);
+					args = args.map(function (arg) {
+						var argParts = parts.slice();
+						argParts[0] = arg;
+						return paren.stringify(argParts, {flat: true, escape: '___'});
+					}).map(function (arg) {
+						return arg;
+					});
+				} else {
+					args = [];
+				}
+
+				if (args.length != fn.length) throw Error(`macro "${name}" requires ${fn.length} arguments, but ${args.length} given`);
 
 				//apply macro call with args
 				return fn.apply(null, args);
@@ -219,13 +225,14 @@ function preprocess (what, how) {
 
 	//register macro, #define directive
 	function define (str) {
-		var data = /#[A-Za-z]+\s*([A-Za-z0-9_$]*)(?:\(([^\(\)]*)\))?\s*(.*)/i.exec(str);
+		var data = /#[A-Za-z]+[ ]*([A-Za-z0-9_$]*)(?:\(([^\(\)]*)\))?[ \r]*([^\n]*)$/m.exec(str);
 		str = str.slice(data.index + data[0].length);
 
 		var name = data[1];
 		var args = data[2];
-
 		var value = data[3];
+
+		if (!name || !value) throw Error(`Macro definition "${data[0]}" is malformed`);
 
 		//register function macro
 		//#define FOO(A, B) (expr)
@@ -237,7 +244,7 @@ function preprocess (what, how) {
 				args = [];
 			}
 
-			macros[name] = function () {
+			function fn () {
 				var result = value;
 
 				//for each arg - replace it’s occurence in `result`
@@ -249,6 +256,11 @@ function preprocess (what, how) {
 
 				return result;
 			};
+			Object.defineProperty(fn, 'length', {
+				value: args.length
+			});
+
+			macros[name] = fn;
 		}
 
 		//register value macro
@@ -263,7 +275,7 @@ function preprocess (what, how) {
 
 	//unregister macro, #undef directive
 	function undefine (str) {
-		var data = /#[A-Za-z0-9_]+\s*([A-Za-z0-9_$]+)/.exec(str);
+		var data = /#[A-Za-z0-9_]+[ ]*([A-Za-z0-9_$]+)/.exec(str);
 		delete macros[data[1]];
 
 		return str.slice(data.index + data[0].length);
