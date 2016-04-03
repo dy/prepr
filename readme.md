@@ -40,3 +40,7 @@ var c = 'xyz';
 ```
 
 The primary purpose is to preprocess code for [glsl-transpiler](https://github.com/stackgl/glsl-transpiler), so some [C-preprocessor](https://gcc.gnu.org/onlinedocs/cpp/index.html#Top) functionality is absent, but the project is welcome to forks and PRs.
+
+## Related
+
+* [compile-js-like-c](https://github.com/ParksProjets/compile-js-like-c) — another C preprocessor for js.
