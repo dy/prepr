@@ -205,19 +205,17 @@ function preprocess (what, how) {
 		str = str.replace(/\`[^`]*\`/g, function (match) {
 			return ' ___string' + arr.push(match);
 		});
+
 		return str;
 	}
 
 	function unescape (str, arr) {
-		//unescape strings
-		arr.forEach(function (rep, i) {
-			str = str.replace(' ___string' + (i+1), rep);
-		});
+		// unhide strings & comments
+		for (var i = arr.length; i--;) {
+			str = str.replace(' ___string' + (i + 1), arr[i]);
+			str = str.replace(' ___comment' + (i + 1), arr[i]);
+		}
 
-		//unhide comments
-		arr.forEach(function (value, i) {
-			str = str.replace(' ___comment' + (i+1), value);
-		});
 		return str;
 	}
 
