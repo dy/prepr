@@ -6,6 +6,8 @@
 var paren = require('parenthesis');
 var balanced = require('balanced-match');
 var extend = require('xtend/mutable');
+var escaper = require('escaper');
+
 
 /**
  * Main processing function
@@ -188,35 +190,13 @@ function preprocess (what, how) {
 
 	//helpers to escape unfoldable things in strings
 	function escape (str, arr) {
-		//hide comments
-		str = str.replace(/\/\/[^\n]*$/mg, function (match) {
-			return ' ___comment' + arr.push(match);
-		});
-		str = str.replace(/\/\*([^\*]|[\r\n]|(\*+([^\*\/]|[\r\n])))*\*+\//g, function (match) {
-			return ' ___comment' + arr.push(match);
-		});
-		//Escape strings
-		str = str.replace(/\'[^']*\'/g, function (match) {
-			return ' ___string' + arr.push(match);
-		});
-		str = str.replace(/\"[^"]*\"/g, function (match) {
-			return ' ___string' + arr.push(match);
-		});
-		str = str.replace(/\`[^`]*\`/g, function (match) {
-			return ' ___string' + arr.push(match);
-		});
-
-		return str;
+		return escaper.replace(str, true, arr)
 	}
 
 	function unescape (str, arr) {
-		// unhide strings & comments
-		for (var i = arr.length; i--;) {
-			str = str.replace(' ___string' + (i + 1), arr[i]);
-			str = str.replace(' ___comment' + (i + 1), arr[i]);
-		}
+		if (!arr || !arr.length) return str
 
-		return str;
+		return escaper.paste(str, arr)
 	}
 
 

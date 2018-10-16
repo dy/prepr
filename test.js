@@ -501,6 +501,7 @@ test('Real use-case', function (t) {
 
 
 test('Too many comments', function (t) {
+	var escaper = require('escaper')
 	var src = `
 		/* a */
 		// b
