@@ -29,13 +29,15 @@ test('Object macros', function (t) {
 	t.end()
 });
 
-test.skip('Define case #4', function (t) {
-	console.log(clean(prepr(`
-		#define THING
-		#ifdef THING
-		123;
-		#end
-	`)))
+test('Define case #4', function (t) {
+	t.equal(clean(prepr(`
+		#ifndef FILE_FOO_SEEN
+		#define FILE_FOO_SEEN
+
+		the entire file
+
+		#endif /* !FILE_FOO_SEEN */
+	`)), 'the entire file')
 
 	t.end()
 })

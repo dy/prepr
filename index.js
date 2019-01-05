@@ -208,7 +208,7 @@ function preprocess (what, how) {
 
 		var name = data[1];
 		var args = data[2];
-		var value = data[3];
+		var value = data[3] || true;
 
 		if (!name || !value) throw Error(`Macro definition "${data[0]}" is malformed`);
 
