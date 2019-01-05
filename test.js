@@ -40,7 +40,7 @@ test('Define case #4', function (t) {
 	`)), 'the entire file')
 
 	t.end()
-})
+});
 
 
 test('Function macros', function (t) {
@@ -361,6 +361,18 @@ test('defined', function (t) {
 		1
 		2
 	`));
+
+	t.equal(clean(prepr(`
+		#define A 1
+		#if defined( A )
+		uniform float yes;
+		#endif
+		uniform float end;
+    `)), clean(`
+    	uniform float yes;
+    	uniform float end;
+    `));
+
 	t.end()
 });
 

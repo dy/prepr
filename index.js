@@ -56,7 +56,6 @@ function preprocess (what, how) {
 		//replace all defined X to defined (X)
 		chunk = chunk.replace(/\bdefined\s*([A-Za-z0-9_$]+)/g, 'defined($1)');
 
-
 		//for each registered macro do it’s call
 		for (var name in macros) {
 			//fn macro
@@ -129,8 +128,8 @@ function preprocess (what, how) {
 		parts = parts.map(function (part) {
 			return part.replace(re, function (match, argsPartIdx) {
 				//parse arguments
-				var args = parts[argsPartIdx];
-				if (args.trim().length) {
+				var args = parts[argsPartIdx].trim();
+				if (args.length) {
 					args = args.split(/\s*,\s*/);
 					args = args.map(function (arg) {
 						var argParts = parts.slice();
