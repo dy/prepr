@@ -265,16 +265,15 @@ function preprocess (what, how) {
 
 		//if no nested ifs - means we are in clause, return as is
 		if (!match) return str;
-
 		var body = match.body;
 		var post = match.post;
 		var elseBody = '';
 
 		//find else part
-		var matchElse;
-		if (matchElse = /^\s*#else[^\n\r]*$/m.exec(body)) {
-			elseBody = body.slice(matchElse.index + matchElse[0].length);
-			body = body.slice(0, matchElse.index);
+		var matchElse = balanced('#if', '#else', str)
+		if (matchElse && matchElse.end <= match.end) {
+			elseBody = matchElse.post.slice(matchElse.post.indexOf('\n'), -match.post.length - 6);
+			body = matchElse.body;
 		}
 
 		//ifdef

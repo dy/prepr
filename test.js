@@ -29,6 +29,18 @@ test('Object macros', function (t) {
 	t.end()
 });
 
+test.skip('Define case #4', function (t) {
+	console.log(clean(prepr(`
+		#define THING
+		#ifdef THING
+		123;
+		#end
+	`)))
+
+	t.end()
+})
+
+
 test('Function macros', function (t) {
 	t.equal(clean(prepr(`
 		#define lang_init()  c_init()
@@ -262,17 +274,56 @@ test('if', function (t) {
 test('nested ifs', function (t) {
 	t.equal(clean(prepr(`
 		#define X 3
+
 		#if X == 1
 		1
 		#else /* X != 1 */
+
 		#if X == 2
 		2
 		#else /* X != 2 */
 		!2
 		#endif /* X != 2 */
+
 		#endif /* X != 1 */
 	`)), clean(`
 		!2
+	`));
+
+	t.equal(clean(prepr(`
+		#define X 3
+
+		#if X != 1
+
+			#if X == 2
+			2
+			#else
+			!2
+			#endif
+
+		#else
+		1
+		#endif
+	`)), clean(`
+		!2
+	`));
+
+	t.equal(clean(prepr(`
+		#define X 2
+
+		#if X != 1
+
+			#if X == 2
+			2
+			#else
+			!2
+			#endif
+
+		#else
+		1
+		#endif
+	`)), clean(`
+		2
 	`));
 	t.end()
 });
