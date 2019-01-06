@@ -389,6 +389,13 @@ test('else', function (t) {
 	t.end()
 });
 
+test('guard eval', function (t) {
+	t.equal(prepr`#if console.log(1)
+	#endif`, '')
+
+	t.end()
+})
+
 
 
 test('#error, #pragma, #extension, #anything', function (t) {

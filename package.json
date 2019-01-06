@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/dy/prepr#readme",
   "devDependencies": {
-    "cln": "^1.0.0",
+    "cln": "^1.1.0",
     "tape": "^4.9.1"
   },
   "dependencies": {

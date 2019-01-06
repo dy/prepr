@@ -7,6 +7,7 @@ var paren = require('parenthesis');
 var balanced = require('balanced-match');
 var extend = require('xtend/mutable');
 var escaper = require('escaper');
+var vm = require('vm');
 
 
 /**
@@ -312,7 +313,7 @@ function preprocess (what, how) {
 				expr = process(expr);
 
 				try {
-					result = eval(expr);
+					result = vm.runInNewContext(expr);
 				} catch (e) {
 					result = false;
 				}
