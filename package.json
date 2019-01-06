@@ -36,7 +36,9 @@
   "dependencies": {
     "balanced-match": "^0.3.0",
     "escaper": "^2.5.3",
+    "expression-eval": "^1.4.0",
+    "object-assign": "^4.1.1",
     "parenthesis": "^3.0.0",
-    "xtend": "^4.0.1"
+    "strip-json-comments": "^2.0.1"
   }
 }

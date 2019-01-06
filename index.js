@@ -5,9 +5,10 @@
 
 var paren = require('parenthesis');
 var balanced = require('balanced-match');
-var extend = require('xtend/mutable');
+var extend = require('object-assign');
 var escaper = require('escaper');
-var vm = require('vm');
+var ee = require('expression-eval');
+var stripComments = require('strip-json-comments')
 
 
 /**
@@ -26,7 +27,7 @@ function preprocess (what, how) {
 		defined: function (arg) {
 			return [].slice.call(arguments).every(function (arg) {
 				return macros[arg] != null;
-			});
+			}) ? 1 : 0;
 		}
 	}, how);
 
@@ -76,7 +77,6 @@ function preprocess (what, how) {
 		}
 
 		chunk = unescape(chunk, arr);
-
 
 		//process directive
 		if (directive) {
@@ -310,10 +310,11 @@ function preprocess (what, how) {
 				clause = clause.slice(expr.length + exprMatch.index);
 
 				//eval expression
-				expr = process(expr);
+				expr = stripComments(process(expr));
 
 				try {
-					result = vm.runInNewContext(expr);
+					var expr = ee.parse(expr);
+					result = ee.eval(expr, macros);
 				} catch (e) {
 					result = false;
 				}
