@@ -123,7 +123,7 @@ function preprocess (what, how) {
 			escape: '___'
 		});
 
-		var re = new RegExp(name + '\\s*\\(___([0-9]+)\\)', 'g');
+		var re = new RegExp(name + '\\s*\\(___([0-9]+)___\\)', 'g');
 
 		//replace each macro call with result
 		parts = parts.map(function (part) {
