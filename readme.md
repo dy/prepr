@@ -3,7 +3,7 @@
 [![npm install prepr](https://nodei.co/npm/prepr.png?mini=true)](https://npmjs.org/package/prepr/)
 
 ```js
-var prepr = require('prepr');
+import prepr from 'prepr';
 
 prepr(`
 	#define A 2;
