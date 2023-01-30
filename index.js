@@ -3,12 +3,12 @@
  * @module  prepr
  */
 
-var paren = require('parenthesis');
-var balanced = require('balanced-match');
-var extend = require('object-assign');
-var escaper = require('escaper');
-var ee = require('expression-eval');
-var stripComments = require('strip-json-comments')
+import paren from 'parenthesis';
+import balanced from 'balanced-match';
+import extend from 'object-assign';
+import escaper from 'escaper';
+import createFn from 'subscript/justin.js';
+import stripComments from 'strip-json-comments';
 
 
 /**
@@ -313,8 +313,8 @@ function preprocess (what, how) {
 				expr = stripComments(process(expr));
 
 				try {
-					var expr = ee.parse(expr);
-					result = ee.eval(expr, macros);
+					var evaluate = createFn(expr);
+					result = evaluate(expr, macros);
 				} catch (e) {
 					result = false;
 				}
@@ -341,4 +341,4 @@ function preprocess (what, how) {
 }
 
 
-module.exports = preprocess;
+export default preprocess;

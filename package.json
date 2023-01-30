@@ -3,6 +3,7 @@
   "version": "1.2.5",
   "description": "Preprocess string in C/GLSL-preprocessor fashion",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "node test.js",
     "test:browser": "budo test.js"
@@ -36,9 +37,9 @@
   "dependencies": {
     "balanced-match": "^2.0.0",
     "escaper": "^2.5.3",
-    "expression-eval": "^5.0.0",
     "object-assign": "^4.1.1",
     "parenthesis": "^3.1.8",
-    "strip-json-comments": "^3.1.1"
+    "strip-json-comments": "^3.1.1",
+    "subscript": "^7.3.1"
   }
 }

@@ -1,7 +1,7 @@
-var test = require('tape');
-var prepr = require('./');
-var clean = require('cln');
-var assert = require('assert');
+import test from 'tape';
+import prepr from './index.js';
+import clean from 'cln';
+import assert from 'assert';
 
 test('Object macros', function (t) {
 	t.equal(clean(prepr(`
@@ -573,7 +573,6 @@ test('Real use-case', function (t) {
 
 
 test('Too many comments', function (t) {
-	var escaper = require('escaper')
 	var src = `
 		/* a */
 		// b
